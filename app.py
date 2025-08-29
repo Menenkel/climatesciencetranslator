@@ -60,10 +60,14 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
     # Combine expert tags and bio
     expert_text = f"{expert_tags} {expert_bio}".lower()
     
-    # Dynamic key terms for better matching - includes all expertise areas from CSV
-    climate_terms = [
-        # Core climate terms
+    # Primary hazard terms that must match for high scores
+    primary_hazards = [
         'drought', 'flood', 'storm', 'heat wave', 'earthquake', 'mudslide', 'multi-hazard',
+        'flooding', 'droughts', 'storms', 'heat waves', 'earthquakes', 'mudslides'
+    ]
+    
+    # Secondary climate terms for broader matching
+    climate_terms = [
         'maize', 'agriculture', 'farming', 'crop', 'west africa', 'africa', 'sahel',
         'carbon', 'sequestration', 'emissions', 'greenhouse gas', 'co2',
         'adaptation', 'mitigation', 'resilience', 'vulnerability',
@@ -102,30 +106,35 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
         'carbon sequestration', 'atmospheric science', 'geophysics'
     ]
     
-    # Extract key terms from question - more flexible matching
-    question_terms = set()
+    # Check for primary hazard matches first
+    query_hazards = []
+    expert_hazards = []
     
-    # Direct term matches
+    # Extract hazards from query
+    for hazard in primary_hazards:
+        if hazard in query_text:
+            query_hazards.append(hazard)
+    
+    # Extract hazards from expert expertise
+    for hazard in primary_hazards:
+        if hazard in expert_text:
+            expert_hazards.append(hazard)
+    
+    # If query mentions a specific hazard, expert must have that hazard expertise
+    if query_hazards and not expert_hazards:
+        return 0.0  # No match if expert doesn't have the requested hazard expertise
+    
+    # If both have hazards, check for exact matches
+    if query_hazards and expert_hazards:
+        hazard_matches = set(query_hazards).intersection(set(expert_hazards))
+        if not hazard_matches:
+            return 0.0  # No matching hazards
+    
+    # Extract other key terms from question
+    question_terms = set()
     for term in climate_terms:
         if term in query_text:
             question_terms.add(term)
-    
-    # Partial word matches for multi-word terms
-    for term in climate_terms:
-        if ' ' in term:  # Multi-word terms
-            words = term.split()
-            for word in words:
-                if word in query_text and len(word) > 3:  # Only significant words
-                    question_terms.add(term)
-    
-    # Individual word matches for any climate-related term
-    query_words = query_text.split()
-    for word in query_words:
-        word_clean = word.lower().strip('.,!?;:')
-        if len(word_clean) > 3:  # Only significant words
-            for term in climate_terms:
-                if word_clean in term or term in word_clean:
-                    question_terms.add(term)
     
     # Extract key terms from expert expertise
     expert_terms = set()
@@ -133,20 +142,19 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
         if term in expert_text:
             expert_terms.add(term)
     
-    # Also check for partial matches in expert text
-    for term in climate_terms:
-        if ' ' in term:  # Multi-word terms
-            words = term.split()
-            for word in words:
-                if word in expert_text and len(word) > 3:  # Only significant words
-                    expert_terms.add(term)
-    
     # Calculate similarity based on term overlap
-    if not question_terms or not expert_terms:
+    if not question_terms and not query_hazards:
         return 0.0
     
-    intersection = len(question_terms.intersection(expert_terms))
-    union = len(question_terms.union(expert_terms))
+    if not expert_terms and not expert_hazards:
+        return 0.0
+    
+    # Calculate base similarity
+    all_question_terms = question_terms.union(set(query_hazards))
+    all_expert_terms = expert_terms.union(set(expert_hazards))
+    
+    intersection = len(all_question_terms.intersection(all_expert_terms))
+    union = len(all_question_terms.union(all_expert_terms))
     
     if union == 0:
         return 0.0
@@ -163,10 +171,14 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
                 if query_word_clean == expert_word_clean:
                     return 1.0  # 100% match for exact word
     
-    # Boost score for more specific matches
+    # Calculate base score
     base_score = intersection / union
-    if intersection > 0:
-        base_score *= 1.5  # Boost for having any matches
+    
+    # Boost for hazard matches
+    if query_hazards and expert_hazards:
+        hazard_intersection = len(set(query_hazards).intersection(set(expert_hazards)))
+        if hazard_intersection > 0:
+            base_score *= 2.0  # Significant boost for hazard matches
     
     # Additional boost for thematic area matches
     if thematic_area.lower() in expert_text:
@@ -211,7 +223,7 @@ def get_expert_recommendations(question, thematic_area, user_affiliation, expert
         match_score = min(100, int((semantic_score + affiliation_bonus) * 100))
         
         # Only include experts with reasonable match scores
-        if match_score > 5:  # Lowered threshold to get more experts
+        if match_score > 15:  # Higher threshold for more precise matching
             # Generate reason for recommendation
             expertise_list = expert['expertise_tags'].split(',')
             if len(expertise_list) > 1:
