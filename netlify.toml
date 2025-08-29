@@ -1,0 +1,12 @@
+[build.environment]
+PIP_NO_BUILD_ISOLATION = "false"
+CFLAGS = "-O2"
+
+[build]
+  command = "pip install -r requirements.txt && python app.py"
+  publish = "static"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
