@@ -63,7 +63,8 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
     # Primary hazard terms that must match for high scores
     primary_hazards = [
         'drought', 'flood', 'storm', 'heat wave', 'earthquake', 'mudslide', 'multi-hazard',
-        'flooding', 'droughts', 'storms', 'heat waves', 'earthquakes', 'mudslides'
+        'flooding', 'droughts', 'storms', 'heat waves', 'earthquakes', 'mudslides',
+        'drought risk', 'flood forecasting', 'flood risk', 'storm forecasting'
     ]
     
     # Secondary climate terms for broader matching
@@ -120,15 +121,20 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
         if hazard in expert_text:
             expert_hazards.append(hazard)
     
-    # If query mentions a specific hazard, expert must have that hazard expertise
-    if query_hazards and not expert_hazards:
-        return 0.0  # No match if expert doesn't have the requested hazard expertise
-    
-    # If both have hazards, check for exact matches
-    if query_hazards and expert_hazards:
+    # STRICT HAZARD MATCHING: If query mentions a specific hazard, expert MUST have that exact hazard
+    if query_hazards:
+        # Check if expert has ANY of the mentioned hazards
         hazard_matches = set(query_hazards).intersection(set(expert_hazards))
         if not hazard_matches:
-            return 0.0  # No matching hazards
+            # Debug: Print why expert was rejected
+            print(f"DEBUG: Expert rejected - Query hazards: {query_hazards}, Expert hazards: {expert_hazards}")
+            return 0.0  # No match - expert doesn't have the requested hazard expertise
+        
+        # If expert has the hazard, give high score but still check other terms
+        base_score = 0.8  # High base score for hazard match
+        print(f"DEBUG: Expert accepted - Query hazards: {query_hazards}, Expert hazards: {expert_hazards}, Matches: {hazard_matches}")
+    else:
+        base_score = 0.0  # No hazard mentioned, start with 0
     
     # Extract other key terms from question
     question_terms = set()
@@ -142,23 +148,6 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
         if term in expert_text:
             expert_terms.add(term)
     
-    # Calculate similarity based on term overlap
-    if not question_terms and not query_hazards:
-        return 0.0
-    
-    if not expert_terms and not expert_hazards:
-        return 0.0
-    
-    # Calculate base similarity
-    all_question_terms = question_terms.union(set(query_hazards))
-    all_expert_terms = expert_terms.union(set(expert_hazards))
-    
-    intersection = len(all_question_terms.intersection(all_expert_terms))
-    union = len(all_question_terms.union(all_expert_terms))
-    
-    if union == 0:
-        return 0.0
-    
     # Check for exact word matches - give 100% score
     query_words = query_text.lower().split()
     expert_words = expert_text.lower().split()
@@ -171,18 +160,31 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
                 if query_word_clean == expert_word_clean:
                     return 1.0  # 100% match for exact word
     
-    # Calculate base score
-    base_score = intersection / union
-    
-    # Boost for hazard matches
-    if query_hazards and expert_hazards:
-        hazard_intersection = len(set(query_hazards).intersection(set(expert_hazards)))
-        if hazard_intersection > 0:
-            base_score *= 2.0  # Significant boost for hazard matches
+    # If no hazard mentioned, calculate similarity based on other terms
+    if not query_hazards:
+        if not question_terms or not expert_terms:
+            return 0.0
+        
+        intersection = len(question_terms.intersection(expert_terms))
+        union = len(question_terms.union(expert_terms))
+        
+        if union == 0:
+            return 0.0
+        
+        base_score = intersection / union
+    else:
+        # Hazard was mentioned and matched, now add bonus for other term matches
+        if question_terms and expert_terms:
+            intersection = len(question_terms.intersection(expert_terms))
+            union = len(question_terms.union(expert_terms))
+            
+            if union > 0:
+                term_bonus = intersection / union * 0.2  # Small bonus for additional term matches
+                base_score += term_bonus
     
     # Additional boost for thematic area matches
     if thematic_area.lower() in expert_text:
-        base_score *= 1.2
+        base_score *= 1.1
     
     return min(1.0, base_score)
 
@@ -223,7 +225,7 @@ def get_expert_recommendations(question, thematic_area, user_affiliation, expert
         match_score = min(100, int((semantic_score + affiliation_bonus) * 100))
         
         # Only include experts with reasonable match scores
-        if match_score > 15:  # Higher threshold for more precise matching
+        if match_score > 25:  # Very high threshold for strict matching
             # Generate reason for recommendation
             expertise_list = expert['expertise_tags'].split(',')
             if len(expertise_list) > 1:
