@@ -60,12 +60,25 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
     # Combine expert tags and bio
     expert_text = f"{expert_tags} {expert_bio}".lower()
     
-    # Primary hazard terms that must match for high scores
-    primary_hazards = [
+    # Primary expertise terms that must match for high scores
+    primary_expertise = [
+        # Hazards
         'drought', 'flood', 'storm', 'heat wave', 'earthquake', 'mudslide', 'multi-hazard',
         'flooding', 'droughts', 'storms', 'heat waves', 'earthquakes', 'mudslides',
         'drought risk', 'flood forecasting', 'flood risk', 'storm forecasting',
-        'anticipatory action', 'early warning', 'early action'
+        'anticipatory action', 'early warning', 'early action',
+        
+        # Data & Technology
+        'data science', 'machine learning', 'artificial intelligence', 'statistical analysis',
+        'computational modeling', 'digital tools', 'remote sensing', 'satellite', 'gis',
+        'climate data analysis', 'modeling', 'simulation', 'algorithm',
+        
+        # Specific Expertise Areas
+        'oceanography', 'atmospheric science', 'meteorology', 'hydrology', 'geophysics',
+        'paleoclimatology', 'ecology', 'biodiversity', 'carbon sequestration',
+        'renewable energy', 'environmental economics', 'environmental policy',
+        'climate modeling', 'climate communication', 'disaster risk finance',
+        'climate risk assessment', 'climate change adaptation'
     ]
     
     # Secondary climate terms for broader matching
@@ -108,44 +121,56 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
         'carbon sequestration', 'atmospheric science', 'geophysics'
     ]
     
-    # Check for primary hazard matches first
-    query_hazards = []
-    expert_hazards = []
+    # Check for primary expertise matches first
+    query_expertise = []
+    expert_expertise = []
     
-    # Extract hazards from query - prioritize more specific terms first
-    query_hazards = []
+    # Extract expertise from query - prioritize more specific terms first
+    query_expertise = []
     
-    # First check for specific hazard terms (longer phrases)
-    specific_hazards = ['drought risk', 'flood forecasting', 'flood risk', 'storm forecasting', 'anticipatory action', 'early warning', 'early action']
-    for hazard in specific_hazards:
-        if hazard in query_text:
-            query_hazards.append(hazard)
-            break  # Only take the first specific hazard found
+    # First check for specific expertise terms (longer phrases)
+    specific_expertise = [
+        'drought risk', 'flood forecasting', 'flood risk', 'storm forecasting', 
+        'anticipatory action', 'early warning', 'early action', 'data science',
+        'machine learning', 'artificial intelligence', 'statistical analysis',
+        'computational modeling', 'climate data analysis', 'climate modeling',
+        'climate change adaptation', 'climate risk assessment', 'disaster risk finance',
+        'environmental economics', 'environmental policy', 'carbon sequestration',
+        'renewable energy', 'remote sensing', 'atmospheric science'
+    ]
+    for expertise in specific_expertise:
+        if expertise in query_text:
+            query_expertise.append(expertise)
+            break  # Only take the first specific expertise found
     
-    # If no specific hazard found, check for general hazard terms
-    if not query_hazards:
-        general_hazards = ['drought', 'flood', 'storm', 'heat wave', 'earthquake', 'mudslide', 'multi-hazard']
-        for hazard in general_hazards:
-            if hazard in query_text:
-                query_hazards.append(hazard)
-                break  # Only take the first general hazard found
+    # If no specific expertise found, check for general expertise terms
+    if not query_expertise:
+        general_expertise = [
+            'drought', 'flood', 'storm', 'heat wave', 'earthquake', 'mudslide', 'multi-hazard',
+            'oceanography', 'meteorology', 'hydrology', 'geophysics', 'paleoclimatology',
+            'ecology', 'biodiversity', 'modeling', 'simulation', 'algorithm', 'satellite', 'gis'
+        ]
+        for expertise in general_expertise:
+            if expertise in query_text:
+                query_expertise.append(expertise)
+                break  # Only take the first general expertise found
     
-    # Extract hazards from expert expertise
-    for hazard in primary_hazards:
-        if hazard in expert_text:
-            expert_hazards.append(hazard)
+    # Extract expertise from expert expertise
+    for expertise in primary_expertise:
+        if expertise in expert_text:
+            expert_expertise.append(expertise)
     
-    # STRICT HAZARD MATCHING: If query mentions a specific hazard, expert MUST have that exact hazard
-    if query_hazards:
-        # Check if expert has ANY of the mentioned hazards
-        hazard_matches = set(query_hazards).intersection(set(expert_hazards))
-        if not hazard_matches:
-            return 0.0  # No match - expert doesn't have the requested hazard expertise
+    # STRICT EXPERTISE MATCHING: If query mentions a specific expertise, expert MUST have that exact expertise
+    if query_expertise:
+        # Check if expert has ANY of the mentioned expertise
+        expertise_matches = set(query_expertise).intersection(set(expert_expertise))
+        if not expertise_matches:
+            return 0.0  # No match - expert doesn't have the requested expertise
         
-        # If expert has the hazard, give high score but still check other terms
-        base_score = 0.8  # High base score for hazard match
+        # If expert has the expertise, give high score but still check other terms
+        base_score = 0.8  # High base score for expertise match
     else:
-        base_score = 0.0  # No hazard mentioned, start with 0
+        base_score = 0.0  # No expertise mentioned, start with 0
     
     # Extract other key terms from question
     question_terms = set()
@@ -171,8 +196,8 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
                 if query_word_clean == expert_word_clean:
                     return 1.0  # 100% match for exact word
     
-    # If no hazard mentioned, calculate similarity based on other terms
-    if not query_hazards:
+    # If no expertise mentioned, calculate similarity based on other terms
+    if not query_expertise:
         if not question_terms or not expert_terms:
             return 0.0
         
@@ -184,7 +209,7 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
         
         base_score = intersection / union
     else:
-        # Hazard was mentioned and matched, now add bonus for other term matches
+        # Expertise was mentioned and matched, now add bonus for other term matches
         if question_terms and expert_terms:
             intersection = len(question_terms.intersection(expert_terms))
             union = len(question_terms.union(expert_terms))
