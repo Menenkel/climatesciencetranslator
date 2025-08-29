@@ -3,7 +3,7 @@ PIP_NO_BUILD_ISOLATION = "false"
 CFLAGS = "-O2"
 
 [build]
-  command = "pip install -r requirements.txt && python app.py"
+  command = "pip install -r requirements.txt"
   publish = "static"
 
 [[redirects]]
