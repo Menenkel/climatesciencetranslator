@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Science Translator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            background: #0f172a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .background-boxes {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 60px);
+            grid-template-rows: repeat(auto-fill, 60px);
+            gap: 2px;
+            padding: 20px;
+            transform: rotate(45deg);
+            transform-origin: center center;
+        }
+
+        .background-box {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .background-box:hover {
+            background: var(--hover-color, rgba(255, 255, 255, 0.2));
+            border-color: var(--hover-color, rgba(255, 255, 255, 0.4));
+            box-shadow: 0 0 20px var(--hover-color, rgba(255, 255, 255, 0.3));
+            transform: scale(1.05);
+        }
+
+        .mask-overlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            mask-image: radial-gradient(transparent, white);
+            -webkit-mask-image: radial-gradient(transparent, white);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .step {
+            display: none;
+            text-align: center;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .title {
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            font-weight: bold;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .top-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 20px;
+        }
+
+        .menu-item {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            color: #ffffff;
+        }
+
+        .question {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            border-radius: 4px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            width: 100%;
+        }
+
+        .btn:disabled {
+            background: #333333;
+            color: #666666;
+            cursor: not-allowed;
+        }
+
+        .chat-interface {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .chat-input button {
+            padding: 1rem 2rem;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .response-area {
+            margin-top: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .response-card {
+            background: #1a1a1a;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #333333;
+        }
+
+        .confidence-badge {
+            background: #333333;
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .expert-card {
+            background: #0a0a0a;
+            padding: 1rem;
+            margin: 1rem 0;
+            border: 1px solid #333333;
+        }
+
+        .expert-name {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .expert-affiliation {
+            color: #cccccc;
+            margin-bottom: 0.5rem;
+        }
+        
+        .match-score {
+            color: #00ff00;
+            margin-bottom: 0.5rem;
+        }
+
+        .expert-reason {
+            color: #999999;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .expertise-summary {
+            color: #7df9ff;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .contact-info {
+            color: #cccccc;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .contact-btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .follow-up {
+            background: #1a1a1a;
+            padding: 1rem;
+            margin-top: 1rem;
+            border: 1px solid #333333;
+        }
+
+        .follow-up-btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            margin-top: 1rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Custom scrollbar styling */
+        .response-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .response-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .response-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .response-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .chat-interface::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-interface::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .chat-interface::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .chat-interface::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Electric Border Effect */
+        .electric-border {
+            position: relative;
+            border-radius: 16px;
+            padding: 2px;
+            background: linear-gradient(45deg, #7df9ff, #ff7df9, #f9ff7d, #7df9ff);
+            background-size: 400% 400%;
+            animation: electricFlow 3s ease-in-out infinite;
+        }
+
+        .electric-border::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 16px;
+            padding: 2px;
+            background: linear-gradient(45deg, #7df9ff, #ff7df9, #f9ff7d, #7df9ff);
+            background-size: 400% 400%;
+            animation: electricFlow 3s ease-in-out infinite reverse;
+            z-index: -1;
+        }
+
+        .electric-border-content {
+            background: #0f172a;
+            border-radius: 14px;
+            padding: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes electricFlow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .answer-box {
+            margin-top: 2rem;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .flip-word {
+            display: inline-block;
+            position: relative;
+            color: #ffd700;
+            font-weight: bold;
+            text-transform: uppercase;
+            width: 200px;
+            text-align: center;
+        }
+
+        .flip-word span {
+            display: inline-block;
+            animation: flip 2s infinite;
+            animation-delay: calc(0.4s * var(--i));
+        }
+
+        @keyframes flip {
+            0%, 80% {
+                transform: rotateY(360deg);
+            }
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            background: transparent;
+            border: 1px solid #ffffff;
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            font-size: 0.875rem;
+            z-index: 100;
+        }
+
+        .back-btn:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .continue-btn {
+            background: #ffd700;
+            color: #000000;
+            border: none;
+            padding: 0.75rem 2rem;
+            cursor: pointer;
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .continue-btn:hover {
+            background: #ffed4e;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Boxes Animation -->
+    <div class="background-boxes" id="background-boxes"></div>
+    <div class="mask-overlay"></div>
+    
+    <!-- Top Menu -->
+    <div class="top-menu">
+        <a href="#" class="menu-item" onclick="showAbout()">About</a>
+        <a href="#" class="menu-item" onclick="showContact()">Contact</a>
+        <a href="#" class="menu-item" onclick="showFAQ()">FAQ</a>
+    </div>
+    
+    <!-- Step 1: Affiliation -->
+    <div id="step1" class="step active">
+        <div class="container">
+            <button class="back-btn" onclick="goBack()" style="display: none;">← Back</button>
+            <h1 class="title">You are a Climate Science <span class="flip-word" id="flip-word-1">Translator</span></h1>
+            <div class="question">What is your affiliation?</div>
+            <select id="affiliation">
+                        <option value="">Select your affiliation</option>
+                        <option value="government">Government</option>
+                        <option value="NGO">NGO</option>
+                        <option value="UN">UN</option>
+                        <option value="academia">Academia</option>
+                        <option value="finance">Finance</option>
+                        <option value="development bank">Development Bank</option>
+                        <option value="commercial">Commercial</option>
+                        <option value="other">Other</option>
+                    </select>
+            <input type="text" id="affiliation-other" placeholder="Please specify your affiliation" style="display: none;">
+            <button id="continue-affiliation" class="continue-btn">Continue</button>
+        </div>
+                </div>
+                
+    <!-- Step 2: Hazard -->
+    <div id="step2" class="step">
+        <div class="container">
+            <button class="back-btn" onclick="goBack()">← Back</button>
+            <h1 class="title">You are a Climate Science <span class="flip-word" id="flip-word-2">Translator</span></h1>
+            <div class="question">What hazard are you primarily interested in?</div>
+            <select id="thematic-area">
+                <option value="">Select the hazard</option>
+                <option value="drought">Drought</option>
+                <option value="flood">Flood</option>
+                <option value="storm">Storm</option>
+                <option value="heat wave">Heat Wave</option>
+                <option value="earthquake">Earthquake</option>
+                <option value="mudslide">Mudslide</option>
+                <option value="multi-hazard">Multi-Hazard</option>
+                        <option value="other">Other</option>
+                    </select>
+            <input type="text" id="thematic-area-other" placeholder="Please specify the hazard" style="display: none;">
+            <button id="continue-hazard" class="continue-btn">Continue</button>
+                </div>
+            </div>
+            
+    <!-- Step 3: Contact Information -->
+    <div id="step3" class="step">
+        <div class="container">
+            <button class="back-btn" onclick="goBack()">← Back</button>
+            <h1 class="title">You are a Climate Science <span class="flip-word" id="flip-word-3">Translator</span></h1>
+            <div class="question">Please provide your contact information</div>
+            <input type="text" id="contact-name" placeholder="Your name">
+            <input type="text" id="contact-affiliation" placeholder="Your affiliation">
+            <input type="email" id="contact-email" placeholder="Your email">
+            <button id="next3" class="btn" disabled>Start Chat</button>
+                </div>
+            </div>
+            
+    <!-- Chat Interface -->
+    <div id="chat-interface" class="chat-interface">
+        <button class="back-btn" onclick="goBack()">← Back</button>
+        <h1 class="title">You are a Climate Science <span class="flip-word" id="flip-word-4">Translator</span></h1>
+        <div class="chat-input">
+            <input type="text" id="question-input" placeholder="Ask your climate science question...">
+            <button id="ask-button">Ask</button>
+        </div>
+        <div id="loading" class="loading">Processing your question...</div>
+        <div id="response-area" class="response-area"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let onboardingData = {};
+        let expertsData = [];
+
+        // DOM elements
+        const steps = document.querySelectorAll('.step');
+        const chatInterface = document.getElementById('chat-interface');
+        const questionInput = document.getElementById('question-input');
+        const askButton = document.getElementById('ask-button');
+        const responseArea = document.getElementById('response-area');
+        const loading = document.getElementById('loading');
+
+        // Show step function
+        function showStep(stepNumber) {
+            steps.forEach(step => step.classList.remove('active'));
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+            
+            // Show/hide back button based on step
+            const backButtons = document.querySelectorAll('.back-btn');
+            backButtons.forEach(btn => {
+                if (stepNumber === 1) {
+                    btn.style.display = 'none';
+                } else {
+                    btn.style.display = 'block';
+                }
+            });
+        }
+
+        // Update next button function
+        function updateNextButton() {
+            const name = document.getElementById('contact-name').value.trim();
+            const affiliation = document.getElementById('contact-affiliation').value.trim();
+            const email = document.getElementById('contact-email').value.trim();
+            const nextButton = document.getElementById('next3');
+            nextButton.disabled = !(name && affiliation && email);
+        }
+
+        // Load experts data
+        async function loadExperts() {
+            try {
+                const response = await fetch('/api/experts');
+                expertsData = await response.json();
+                console.log('Experts loaded:', expertsData.length);
+            } catch (error) {
+                console.error('Error loading experts:', error);
+            }
+        }
+
+        // Ask question
+        async function askQuestion(question) {
+            if (!question.trim()) return;
+
+            responseArea.style.display = 'none';
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/assistant', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        onboarding: onboardingData,
+                        question: question,
+                        experts: expertsData
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResponse(data);
+                } else {
+                    throw new Error(data.error || 'Failed to get response');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error getting response: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Display response
+        function displayResponse(data) {
+            let html = `
+                <div class="answer-box">
+                    <div class="electric-border">
+                        <div class="electric-border-content">
+                            <div class="confidence-badge">Confidence: ${data.confidence}%</div>
+                            <div class="question">${data.answer}</div>
+                    </div>
+                    </div>
+                </div>
+            `;
+
+            if (data.recommended_experts && data.recommended_experts.length > 0) {
+                html += '<div class="response-card">';
+                html += '<div class="question">Recommended Experts:</div>';
+                
+                data.recommended_experts.forEach(expert => {
+                    html += `
+                        <div class="expert-card">
+                            <div class="expert-name">${expert.name}</div>
+                            <div class="expert-affiliation">${expert.affiliation}</div>
+                            <div class="match-score">${expert.match_score}% match</div>
+                            <div class="expert-reason">${expert.reason}</div>
+                            <div class="expertise-summary">Expertise: ${expert.expertise_summary || 'Climate Science'}</div>
+                            <div class="contact-info">${expert.contact_info || `Contact: ${expert.name} at ${expert.contact_email}`}</div>
+                            ${expert.contact_email ? 
+                                `<button onclick="contactExpert('${expert.contact_email}')" class="contact-btn">Contact Expert</button>` :
+                                '<div style="color: #666666; font-size: 0.875rem;">Contact info not available</div>'
+                            }
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+
+            if (data.follow_up) {
+                html += `
+                    <div class="follow-up">
+                        <div class="question">${data.follow_up}</div>
+                        <button onclick="askFollowUp('${data.follow_up}')" class="follow-up-btn">Ask Follow-up</button>
+                    </div>
+                `;
+            }
+
+            responseArea.innerHTML = html;
+            responseArea.style.display = 'block';
+        }
+
+        // Contact expert
+        window.contactExpert = function(email) {
+            window.open(`mailto:${email}`, '_blank');
+        };
+
+        // Menu functions
+        window.showAbout = function() {
+            alert('About: Climate Science Translator Assistant\n\nThis application provides expert climate science answers and connects users with specialized researchers. Built with modern web technologies and AI-powered responses.');
+        };
+
+        window.showContact = function() {
+            alert('Contact: Climate Science Translator Assistant\n\nFor technical support or questions about this application, please contact the development team.');
+        };
+
+        window.showFAQ = function() {
+            alert('FAQ: Climate Science Translator Assistant\n\nQ: How does the expert matching work?\nA: The system uses semantic similarity to match your questions with experts based on their expertise areas.\n\nQ: How accurate are the answers?\nA: Answers are generated using ChatGPT API and include confidence scores.\n\nQ: Can I contact the recommended experts?\nA: Yes, click the "Contact Expert" button to send them an email.');
+        };
+
+        // Ask follow-up
+        window.askFollowUp = function(question) {
+            questionInput.value = question;
+            askQuestion(question);
+        };
+
+        // Flip word effect
+        function createFlipWord(elementId) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const words = ['Translator', 'Engineer', 'Practitioner', 'Activist', 'Communicator'];
+            let currentIndex = 0;
+            
+            function updateWord() {
+                element.textContent = words[currentIndex];
+                currentIndex = (currentIndex + 1) % words.length;
+            }
+            
+            // Update word every 2 seconds
+            setInterval(updateWord, 2000);
+        }
+
+        // Back button functionality
+        function goBack() {
+            const currentStep = document.querySelector('.step.active');
+            const chatInterface = document.getElementById('chat-interface');
+            
+            if (chatInterface && chatInterface.style.display === 'block') {
+                // If we're in chat interface, go back to step 3
+                chatInterface.style.display = 'none';
+                showStep(3);
+            } else if (currentStep) {
+                const currentStepNumber = parseInt(currentStep.id.replace('step', ''));
+                if (currentStepNumber > 1) {
+                    showStep(currentStepNumber - 1);
+                }
+            }
+        }
+
+        // Create background grid
+        function createBackgroundBoxes() {
+            const container = document.getElementById('background-boxes');
+            if (!container) return;
+            
+            // Calculate how many boxes we need based on viewport
+            // Since the grid is rotated 45 degrees, we need more boxes to ensure full coverage
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const boxSize = 60;
+            const gap = 2;
+            const padding = 20;
+            
+            // Calculate the maximum dimension needed to cover the entire screen when rotated
+            // We need to account for the rotation which requires more cells
+            const maxDimension = Math.max(viewportWidth, viewportHeight);
+            const expandedDimension = maxDimension * 1.5; // Increase by 50% to ensure full coverage
+            
+            const cols = Math.ceil(expandedDimension / (boxSize + gap));
+            const rows = Math.ceil(expandedDimension / (boxSize + gap));
+            const totalBoxes = cols * rows;
+            
+            // Define color palette for different hover effects
+            const colors = [
+                'rgba(255, 100, 100, 0.3)',   // Red
+                'rgba(100, 255, 100, 0.3)',   // Green
+                'rgba(100, 100, 255, 0.3)',   // Blue
+                'rgba(255, 255, 100, 0.3)',   // Yellow
+                'rgba(255, 100, 255, 0.3)',   // Magenta
+                'rgba(100, 255, 255, 0.3)',   // Cyan
+                'rgba(255, 150, 100, 0.3)',   // Orange
+                'rgba(150, 100, 255, 0.3)',   // Purple
+                'rgba(100, 255, 150, 0.3)',   // Light Green
+                'rgba(255, 200, 100, 0.3)'    // Peach
+            ];
+            
+            // Clear existing boxes
+            container.innerHTML = '';
+            
+            // Create grid boxes
+            for (let i = 0; i < totalBoxes; i++) {
+                const box = document.createElement('div');
+                box.className = 'background-box';
+                
+                // Assign a random color from the palette
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                box.style.setProperty('--hover-color', randomColor);
+                
+                container.appendChild(box);
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded successfully');
+
+            // Create background boxes
+            createBackgroundBoxes();
+
+            // Handle window resize to recreate grid
+            window.addEventListener('resize', createBackgroundBoxes);
+
+            // Initialize flip word effect for all steps
+            createFlipWord('flip-word-1');
+            createFlipWord('flip-word-2');
+            createFlipWord('flip-word-3');
+            createFlipWord('flip-word-4');
+
+            // Affiliation dropdown
+            const affiliationSelect = document.getElementById('affiliation');
+            const continueAffiliationBtn = document.getElementById('continue-affiliation');
+            
+            affiliationSelect.addEventListener('change', () => {
+                const affiliation = affiliationSelect.value;
+                const otherField = document.getElementById('affiliation-other');
+                
+                console.log('Affiliation selected:', affiliation);
+                
+                if (affiliation === 'other') {
+                    otherField.style.display = 'block';
+                    otherField.focus();
+                    continueAffiliationBtn.style.display = 'inline-block';
+                } else if (affiliation !== '') {
+                    otherField.style.display = 'none';
+                    continueAffiliationBtn.style.display = 'none';
+                    setTimeout(() => showStep(2), 300);
+                }
+            });
+
+            // Affiliation other field
+            const affiliationOther = document.getElementById('affiliation-other');
+            affiliationOther.addEventListener('input', () => {
+                const otherValue = affiliationOther.value.trim();
+                if (otherValue !== '') {
+                    continueAffiliationBtn.style.display = 'inline-block';
+                } else {
+                    continueAffiliationBtn.style.display = 'none';
+                }
+            });
+
+            // Continue button for affiliation
+            continueAffiliationBtn.addEventListener('click', () => {
+                const otherValue = affiliationOther.value.trim();
+                if (otherValue !== '') {
+                    setTimeout(() => showStep(2), 300);
+                }
+            });
+
+            // Thematic area dropdown
+            const thematicAreaSelect = document.getElementById('thematic-area');
+            const continueHazardBtn = document.getElementById('continue-hazard');
+            
+            thematicAreaSelect.addEventListener('change', () => {
+                const thematicArea = thematicAreaSelect.value;
+                const otherField = document.getElementById('thematic-area-other');
+                
+                if (thematicArea === 'other') {
+                    otherField.style.display = 'block';
+                    otherField.focus();
+                    continueHazardBtn.style.display = 'inline-block';
+                } else if (thematicArea !== '') {
+                    otherField.style.display = 'none';
+                    continueHazardBtn.style.display = 'none';
+                    setTimeout(() => showStep(3), 300);
+                }
+            });
+
+            // Thematic area other field
+            const thematicAreaOther = document.getElementById('thematic-area-other');
+            thematicAreaOther.addEventListener('input', () => {
+                const otherValue = thematicAreaOther.value.trim();
+                if (otherValue !== '') {
+                    continueHazardBtn.style.display = 'inline-block';
+                } else {
+                    continueHazardBtn.style.display = 'none';
+                }
+            });
+
+            // Continue button for hazard
+            continueHazardBtn.addEventListener('click', () => {
+                const otherValue = thematicAreaOther.value.trim();
+                if (otherValue !== '') {
+                    setTimeout(() => showStep(3), 300);
+                }
+            });
+
+            // Contact form fields
+            document.getElementById('contact-name').addEventListener('input', updateNextButton);
+            document.getElementById('contact-affiliation').addEventListener('input', updateNextButton);
+            document.getElementById('contact-email').addEventListener('input', updateNextButton);
+
+            // Next button
+            document.getElementById('next3').addEventListener('click', () => {
+                // Get selected affiliation
+                const selectedButton = document.querySelector('.affiliation-btn.selected');
+                let affiliation = affiliationSelect.value;
+                let thematicArea = thematicAreaSelect.value;
+                const contactName = document.getElementById('contact-name').value;
+                const contactAffiliation = document.getElementById('contact-affiliation').value;
+                const contactEmail = document.getElementById('contact-email').value;
+
+                if (affiliation === 'other') {
+                    affiliation = affiliationOther.value.trim();
+                }
+                if (thematicArea === 'other') {
+                    thematicArea = thematicAreaOther.value.trim();
+                }
+
+                onboardingData = {
+                    affiliation,
+                    thematic_area: thematicArea,
+                    contact: {
+                        name: contactName,
+                        affiliation_text: contactAffiliation,
+                        email: contactEmail
+                    }
+                };
+
+                // Hide all steps and show chat interface
+                steps.forEach(step => step.classList.remove('active'));
+                chatInterface.style.display = 'block';
+                questionInput.focus();
+            });
+
+            // Chat interface event listeners
+        askButton.addEventListener('click', () => {
+            askQuestion(questionInput.value);
+        });
+
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                askQuestion(questionInput.value);
+            }
+        });
+
+            // Load experts data
+            loadExperts();
+        });
+    </script>
+</body>
+</html>

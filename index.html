@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Science Translator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+        
+        :root {
+            --neon-teal: #00ffff;
+            --neon-magenta: #ff00ff;
+            --neon-cyan: #00bfff;
+            --dark-bg: #0b0f1a;
+            --card-bg: #1a1f2e;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+        
+        .neon-glow {
+            box-shadow: 
+                0 8px 24px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(0, 255, 230, 0.1),
+                0 0 20px rgba(0, 255, 230, 0.1);
+        }
+        
+        .neon-glow:hover {
+            box-shadow: 
+                0 8px 24px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(0, 255, 230, 0.2),
+                0 0 30px rgba(0, 255, 230, 0.2);
+        }
+        
+        .neon-text {
+            text-shadow: 0 0 10px var(--neon-teal);
+        }
+        
+        .neon-border {
+            border: 1px solid var(--neon-teal);
+            box-shadow: 0 0 10px rgba(0, 255, 230, 0.3);
+        }
+        
+        .card-hover {
+            transition: all 0.16s cubic-bezier(0.2, 0.9, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px) rotateX(1deg);
+        }
+        
+        .input-glow:focus {
+            box-shadow: 0 0 20px rgba(0, 255, 230, 0.3);
+            border-color: var(--neon-teal);
+        }
+        
+        .btn-neon {
+            background: linear-gradient(45deg, var(--neon-teal), var(--neon-cyan));
+            transition: all 0.16s cubic-bezier(0.2, 0.9, 0.2, 1);
+        }
+        
+        .btn-neon:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 230, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .btn-neon:active {
+            transform: translateY(0);
+        }
+        
+        .confidence-chip {
+            background: linear-gradient(45deg, var(--neon-magenta), var(--neon-teal));
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .typing-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 230, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .expert-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 230, 0.1);
+        }
+        
+        .match-score {
+            background: linear-gradient(45deg, var(--neon-teal), var(--neon-cyan));
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .loading-dots {
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0%, 80%, 100% { opacity: 0; }
+            40% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold neon-text font-orbitron mb-4">
+                Climate Science Translator
+            </h1>
+            <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                Get expert climate science answers and connect with specialized researchers
+            </p>
+        </header>
+
+        <!-- Onboarding Flow -->
+        <div id="onboarding" class="neon-glow bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 mb-8">
+            <h2 class="text-2xl font-bold mb-6 text-center">Welcome! Let's get started</h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Your Affiliation</label>
+                    <select id="affiliation" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg input-glow focus:outline-none">
+                        <option value="">Select your affiliation</option>
+                        <option value="government">Government</option>
+                        <option value="NGO">NGO</option>
+                        <option value="UN">UN</option>
+                        <option value="academia">Academia</option>
+                        <option value="finance">Finance</option>
+                        <option value="development bank">Development Bank</option>
+                        <option value="commercial">Commercial</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Thematic Area</label>
+                    <select id="thematic-area" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg input-glow focus:outline-none">
+                        <option value="">Select your focus area</option>
+                        <option value="project planning">Project Planning</option>
+                        <option value="decision making">Decision Making</option>
+                        <option value="operational support">Operational Support</option>
+                        <option value="evaluation">Evaluation</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <label class="block text-sm font-medium mb-2">Contact Information</label>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <input type="text" id="contact-name" placeholder="Your name" class="p-3 bg-gray-700 border border-gray-600 rounded-lg input-glow focus:outline-none">
+                    <input type="text" id="contact-affiliation" placeholder="Organization" class="p-3 bg-gray-700 border border-gray-600 rounded-lg input-glow focus:outline-none">
+                    <input type="email" id="contact-email" placeholder="Email address" class="p-3 bg-gray-700 border border-gray-600 rounded-lg input-glow focus:outline-none">
+                </div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <button id="complete-onboarding" class="btn-neon px-8 py-3 rounded-lg font-semibold text-white">
+                    Get Started
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Chat Interface -->
+        <div id="chat-interface" class="hidden">
+            <!-- Question Input -->
+            <div class="neon-glow bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8">
+                <div class="flex gap-4">
+                    <input type="text" id="question-input" placeholder="Ask your climate science question..." 
+                           class="flex-1 p-4 bg-gray-700 border border-gray-600 rounded-lg input-glow focus:outline-none text-lg">
+                    <button id="ask-button" class="btn-neon px-8 py-4 rounded-lg font-semibold text-white">
+                        Ask
+                    </button>
+                </div>
+            </div>
+
+            <!-- Response Area -->
+            <div id="response-area" class="hidden">
+                <!-- Answer Card -->
+                <div class="neon-glow bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Answer</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-400">Confidence:</span>
+                            <span id="confidence-score" class="confidence-chip px-3 py-1 rounded-full text-sm font-bold text-white"></span>
+                        </div>
+                    </div>
+                    <p id="answer-text" class="text-lg leading-relaxed typing-shimmer"></p>
+                </div>
+
+                <!-- Expert Recommendations -->
+                <div class="neon-glow bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold mb-6">Recommended Experts</h3>
+                    <div id="experts-grid" class="grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <!-- Expert cards will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Follow-up Question -->
+                <div id="follow-up-area" class="neon-glow bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8">
+                    <h3 class="text-lg font-semibold mb-3">Follow-up Question</h3>
+                    <p id="follow-up-text" class="text-gray-300 mb-4"></p>
+                    <button id="follow-up-button" class="btn-neon px-6 py-2 rounded-lg font-medium text-white">
+                        Ask Follow-up
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="hidden text-center py-12">
+                <div class="inline-flex items-center gap-2 text-xl">
+                    <span>Analyzing your question</span>
+                    <span class="loading-dots">...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let onboardingData = null;
+        let expertsData = null;
+
+        // DOM elements
+        const onboarding = document.getElementById('onboarding');
+        const chatInterface = document.getElementById('chat-interface');
+        const questionInput = document.getElementById('question-input');
+        const askButton = document.getElementById('ask-button');
+        const responseArea = document.getElementById('response-area');
+        const loading = document.getElementById('loading');
+        const answerText = document.getElementById('answer-text');
+        const confidenceScore = document.getElementById('confidence-score');
+        const expertsGrid = document.getElementById('experts-grid');
+        const followUpArea = document.getElementById('follow-up-area');
+        const followUpText = document.getElementById('follow-up-text');
+        const followUpButton = document.getElementById('follow-up-button');
+
+        // Load experts data
+        async function loadExperts() {
+            try {
+                const response = await fetch('/api/experts');
+                expertsData = await response.json();
+            } catch (error) {
+                console.error('Error loading experts:', error);
+            }
+        }
+
+        // Complete onboarding
+        document.getElementById('complete-onboarding').addEventListener('click', () => {
+            const affiliation = document.getElementById('affiliation').value;
+            const thematicArea = document.getElementById('thematic-area').value;
+            const contactName = document.getElementById('contact-name').value;
+            const contactAffiliation = document.getElementById('contact-affiliation').value;
+            const contactEmail = document.getElementById('contact-email').value;
+
+            if (!affiliation || !thematicArea || !contactName || !contactAffiliation || !contactEmail) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            onboardingData = {
+                affiliation,
+                thematic_area: thematicArea,
+                contact: {
+                    name: contactName,
+                    affiliation_text: contactAffiliation,
+                    email: contactEmail
+                }
+            };
+
+            onboarding.classList.add('hidden');
+            chatInterface.classList.remove('hidden');
+            questionInput.focus();
+        });
+
+        // Ask question
+        async function askQuestion(question) {
+            if (!question.trim()) return;
+
+            // Show loading
+            responseArea.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/assistant', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        onboarding: onboardingData,
+                        question: question,
+                        experts: expertsData
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResponse(data);
+                } else {
+                    throw new Error(data.error || 'Failed to get response');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error getting response: ' + error.message);
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Display response
+        function displayResponse(data) {
+            // Display answer
+            answerText.textContent = data.answer;
+            confidenceScore.textContent = `${data.confidence}%`;
+
+            // Display experts
+            expertsGrid.innerHTML = '';
+            data.recommended_experts.forEach(expert => {
+                const expertCard = createExpertCard(expert);
+                expertsGrid.appendChild(expertCard);
+            });
+
+            // Display follow-up
+            if (data.follow_up) {
+                followUpText.textContent = data.follow_up;
+                followUpArea.classList.remove('hidden');
+            } else {
+                followUpArea.classList.add('hidden');
+            }
+
+            responseArea.classList.remove('hidden');
+        }
+
+        // Create expert card
+        function createExpertCard(expert) {
+            const card = document.createElement('div');
+            card.className = 'expert-card rounded-xl p-6 card-hover';
+            
+            card.innerHTML = `
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h4 class="text-lg font-semibold mb-1">${expert.name}</h4>
+                        <p class="text-sm text-gray-400">${expert.affiliation}</p>
+                    </div>
+                    <div class="match-score px-3 py-1 rounded-full text-sm font-bold text-white">
+                        ${expert.match_score}%
+                    </div>
+                </div>
+                <p class="text-sm text-gray-300 mb-4">${expert.reason}</p>
+                ${expert.contact_email ? `
+                    <button onclick="contactExpert('${expert.contact_email}')" 
+                            class="w-full btn-neon py-2 rounded-lg font-medium text-white">
+                        Contact Expert
+                    </button>
+                ` : '<p class="text-sm text-gray-500">Contact info not available</p>'}
+            `;
+            
+            return card;
+        }
+
+        // Contact expert
+        function contactExpert(email) {
+            window.open(`mailto:${email}`, '_blank');
+        }
+
+        // Event listeners
+        askButton.addEventListener('click', () => {
+            askQuestion(questionInput.value);
+        });
+
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                askQuestion(questionInput.value);
+            }
+        });
+
+        followUpButton.addEventListener('click', () => {
+            questionInput.value = followUpText.textContent;
+            askQuestion(followUpText.textContent);
+        });
+
+        // Initialize
+        loadExperts();
+    </script>
+</body>
+</html>
