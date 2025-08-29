@@ -64,7 +64,8 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
     primary_hazards = [
         'drought', 'flood', 'storm', 'heat wave', 'earthquake', 'mudslide', 'multi-hazard',
         'flooding', 'droughts', 'storms', 'heat waves', 'earthquakes', 'mudslides',
-        'drought risk', 'flood forecasting', 'flood risk', 'storm forecasting'
+        'drought risk', 'flood forecasting', 'flood risk', 'storm forecasting',
+        'anticipatory action', 'early warning', 'early action'
     ]
     
     # Secondary climate terms for broader matching
@@ -72,7 +73,7 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
         'maize', 'agriculture', 'farming', 'crop', 'west africa', 'africa', 'sahel',
         'carbon', 'sequestration', 'emissions', 'greenhouse gas', 'co2',
         'adaptation', 'mitigation', 'resilience', 'vulnerability',
-        'anticipatory action', 'early warning', 'early action', 'preparedness',
+        'preparedness',
         'climate', 'weather', 'temperature', 'precipitation', 'rainfall',
         'renewable', 'energy', 'solar', 'wind', 'hydro', 'geothermal',
         'atmospheric', 'air quality', 'pollution', 'aerosol',
@@ -115,7 +116,7 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
     query_hazards = []
     
     # First check for specific hazard terms (longer phrases)
-    specific_hazards = ['drought risk', 'flood forecasting', 'flood risk', 'storm forecasting']
+    specific_hazards = ['drought risk', 'flood forecasting', 'flood risk', 'storm forecasting', 'anticipatory action', 'early warning', 'early action']
     for hazard in specific_hazards:
         if hazard in query_text:
             query_hazards.append(hazard)
