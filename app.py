@@ -111,10 +111,23 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
     query_hazards = []
     expert_hazards = []
     
-    # Extract hazards from query
-    for hazard in primary_hazards:
+    # Extract hazards from query - prioritize more specific terms first
+    query_hazards = []
+    
+    # First check for specific hazard terms (longer phrases)
+    specific_hazards = ['drought risk', 'flood forecasting', 'flood risk', 'storm forecasting']
+    for hazard in specific_hazards:
         if hazard in query_text:
             query_hazards.append(hazard)
+            break  # Only take the first specific hazard found
+    
+    # If no specific hazard found, check for general hazard terms
+    if not query_hazards:
+        general_hazards = ['drought', 'flood', 'storm', 'heat wave', 'earthquake', 'mudslide', 'multi-hazard']
+        for hazard in general_hazards:
+            if hazard in query_text:
+                query_hazards.append(hazard)
+                break  # Only take the first general hazard found
     
     # Extract hazards from expert expertise
     for hazard in primary_hazards:
@@ -126,13 +139,10 @@ def calculate_semantic_similarity(question, thematic_area, expert_tags, expert_b
         # Check if expert has ANY of the mentioned hazards
         hazard_matches = set(query_hazards).intersection(set(expert_hazards))
         if not hazard_matches:
-            # Debug: Print why expert was rejected
-            print(f"DEBUG: Expert rejected - Query hazards: {query_hazards}, Expert hazards: {expert_hazards}")
             return 0.0  # No match - expert doesn't have the requested hazard expertise
         
         # If expert has the hazard, give high score but still check other terms
         base_score = 0.8  # High base score for hazard match
-        print(f"DEBUG: Expert accepted - Query hazards: {query_hazards}, Expert hazards: {expert_hazards}, Matches: {hazard_matches}")
     else:
         base_score = 0.0  # No hazard mentioned, start with 0
     
